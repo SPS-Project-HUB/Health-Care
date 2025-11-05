@@ -1,474 +1,574 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>HealthCare — Live Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealthCare — Live Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #3b82f6;
+            --primary-dark: #1d4ed8;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #06b6d4;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --radius: 12px;
+            --transition: all 0.3s ease;
+        }
 
-  <!-- Simple styling -->
-  <style>
-    :root {
-      --primary: #2563eb;
-      --primary-light: #3b82f6;
-      --secondary: #10b981;
-      --danger: #ef4444;
-      --warning: #f59e0b;
-      --bg: #f8fafc;
-      --card: #ffffff;
-      --text: #1e293b;
-      --text-muted: #64748b;
-      --border: #e2e8f0;
-      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+        }
 
-    body {
-      background-color: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      padding: 24px;
-      line-height: 1.5;
-    }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
 
-    .container {
-      width: 100%;
-      max-width: 1200px;
-    }
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            padding: 20px 0;
+        }
 
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 32px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid var(--border);
-    }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
 
-    .header-left h1 {
-      font-size: 28px;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 4px;
-    }
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+        }
 
-    .header-left p {
-      color: var(--text-muted);
-      font-size: 14px;
-    }
+        .logo-text h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text);
+        }
 
-    .status-indicator {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      background: var(--card);
-      border-radius: 50px;
-      box-shadow: var(--shadow);
-      font-size: 14px;
-    }
+        .logo-text p {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
 
-    .status-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--warning);
-    }
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background: var(--card);
+            border-radius: 50px;
+            box-shadow: var(--shadow);
+            font-size: 14px;
+            font-weight: 500;
+        }
 
-    .status-dot.connected {
-      background: var(--secondary);
-    }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--warning);
+            animation: pulse 2s infinite;
+        }
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 24px;
-      margin-bottom: 32px;
-    }
+        .status-dot.connected {
+            background: var(--secondary);
+        }
 
-    .card {
-      background: var(--card);
-      padding: 24px;
-      border-radius: 12px;
-      box-shadow: var(--shadow);
-      transition: all 0.3s ease;
-      border: 1px solid var(--border);
-    }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
 
-    .card:hover {
-      box-shadow: var(--shadow-lg);
-    }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 30px;
+        }
 
-    .card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-    }
+        .card {
+            background: var(--card);
+            padding: 24px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
 
-    .card-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
 
-    .card-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(37, 99, 235, 0.1);
-      color: var(--primary);
-    }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
 
-    .card-value {
-      font-size: 32px;
-      font-weight: 700;
-      margin-bottom: 8px;
-      color: var(--text);
-    }
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
 
-    .card-footer {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
 
-    .chart-card {
-      grid-column: 1 / -1;
-      padding: 24px;
-    }
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--primary);
+            font-size: 22px;
+        }
 
-    .chart-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-    }
+        .card-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
 
-    .chart-title {
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--text);
-    }
+        .card-footer {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
 
-    .chart-container {
-      height: 300px;
-      margin-top: 16px;
-    }
+        .chart-card {
+            grid-column: 1 / -1;
+            padding: 24px;
+        }
 
-    footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px 0;
-      font-size: 14px;
-      color: var(--text-muted);
-      border-top: 1px solid var(--border);
-    }
+        .chart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
 
-    .footer-left {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+        }
 
-    .connection-status {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+        .chart-actions {
+            display: flex;
+            gap: 10px;
+        }
 
-    @media (max-width: 1024px) {
-      .grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
+        .chart-btn {
+            padding: 8px 16px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: var(--transition);
+        }
 
-    @media (max-width: 768px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
-      
-      header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
-      }
-      
-      footer {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
-      }
-    }
-  </style>
+        .chart-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
 
-  <!-- Chart.js (for the rolling chart) -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Material Icons -->
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  <!-- Inter Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+        .chart-container {
+            height: 300px;
+            margin-top: 16px;
+        }
+
+        footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 0;
+            font-size: 14px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+        }
+
+        .footer-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .metric-trend {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--secondary);
+        }
+
+        .metric-trend.down {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        .metric-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-left: 10px;
+        }
+
+        .normal {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--secondary);
+        }
+
+        .warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        .critical {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        @media (max-width: 1024px) {
+            .grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+            
+            footer {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <div class="header-left">
-        <h1>HealthCare Dashboard</h1>
-        <p>Real-time patient monitoring system</p>
-      </div>
-      <div class="status-indicator">
-        <div class="status-dot" id="statusDot"></div>
-        <span id="statusText">Connecting...</span>
-      </div>
-    </header>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-heartbeat"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>HealthCare Dashboard</h1>
+                    <p>Real-time patient monitoring system</p>
+                </div>
+            </div>
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Connecting...</span>
+            </div>
+        </header>
 
-    <div class="grid">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Heart Rate</div>
-          <div class="card-icon">
-            <span class="material-icons" style="color: var(--danger);">favorite</span>
-          </div>
-        </div>
-        <div id="bpm" class="card-value">--</div>
-        <div class="card-footer" id="bpmUpdated">Last update: --</div>
-      </div>
+        <div class="grid">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Heart Rate</div>
+                    <div class="card-icon">
+                        <i class="fas fa-heart" style="color: var(--danger);"></i>
+                    </div>
+                </div>
+                <div id="bpm" class="card-value">-- <span class="metric-badge normal">Normal</span></div>
+                <div class="card-footer" id="bpmUpdated">Last update: --</div>
+            </div>
 
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Body Temperature</div>
-          <div class="card-icon">
-            <span class="material-icons" style="color: var(--warning);">thermostat</span>
-          </div>
-        </div>
-        <div id="temp" class="card-value">--</div>
-        <div class="card-footer" id="tempUpdated">Last update: --</div>
-      </div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Body Temperature</div>
+                    <div class="card-icon">
+                        <i class="fas fa-thermometer-half" style="color: var(--warning);"></i>
+                    </div>
+                </div>
+                <div id="temp" class="card-value">-- <span class="metric-badge normal">Normal</span></div>
+                <div class="card-footer" id="tempUpdated">Last update: --</div>
+            </div>
 
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Pulse Sensor</div>
-          <div class="card-icon">
-            <span class="material-icons" style="color: var(--secondary);">show_chart</span>
-          </div>
-        </div>
-        <div id="raw" class="card-value">--</div>
-        <div class="card-footer" id="rawUpdated">Last update: --</div>
-      </div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Pulse Sensor</div>
+                    <div class="card-icon">
+                        <i class="fas fa-wave-square" style="color: var(--secondary);"></i>
+                    </div>
+                </div>
+                <div id="raw" class="card-value">--</div>
+                <div class="card-footer" id="rawUpdated">Last update: --</div>
+            </div>
 
-      <div class="card chart-card">
-        <div class="chart-header">
-          <div class="chart-title">Heart Rate History</div>
-          <div class="status-indicator">
-            <div class="status-dot connected"></div>
-            <span>Live data</span>
-          </div>
+            <div class="card chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">Heart Rate History</div>
+                    <div class="chart-actions">
+                        <button class="chart-btn active">1H</button>
+                        <button class="chart-btn">6H</button>
+                        <button class="chart-btn">24H</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="bpmChart"></canvas>
+                </div>
+            </div>
         </div>
-        <div class="chart-container">
-          <canvas id="bpmChart"></canvas>
-        </div>
-      </div>
+
+        <footer>
+            <div class="footer-left">
+                <div class="connection-status">
+                    <div class="status-dot" id="connDot"></div>
+                    <span id="connText">Disconnected</span>
+                </div>
+                <div>Hosted on GitHub Pages</div>
+            </div>
+            <div>Data from Firebase Realtime Database</div>
+        </footer>
     </div>
 
-    <footer>
-      <div class="footer-left">
-        <div class="connection-status">
-          <div class="status-dot" id="connDot"></div>
-          <span id="connText">Disconnected</span>
-        </div>
-        <div>Hosted on GitHub Pages</div>
-      </div>
-      <div>Data from Firebase Realtime Database</div>
-    </footer>
-  </div>
-
-  <!-- Firebase web modular SDK (v12.5.0) -->
-  <script type="module">
-    // Firebase imports (modular SDK)
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
-
-    // --- Replace with your Firebase config (you provided this earlier) ---
-    const firebaseConfig = {
-      apiKey: "AIzaSyCXNdT863O6m5Q_suM1oG4KbjEd0DxLqQo",
-      authDomain: "health-care-f0262.firebaseapp.com",
-      databaseURL: "https://health-care-f0262-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "health-care-f0262",
-      storageBucket: "health-care-f0262.firebasestorage.app",
-      messagingSenderId: "1001741084003",
-      appId: "1:1001741084003:web:3e1bfe9f0fa8b6a03c1f56"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
-    // Refs to your DB nodes
-    const bpmRef = ref(db, 'HealthCare/HeartRate/BPM');
-    const tempRef = ref(db, 'HealthCare/Temperature/BodyTempC');
-    const rawRef = ref(db, 'HealthCare/PulseSensor/RawValue');
-
-    // DOM elements
-    const elBpm = document.getElementById('bpm');
-    const elTemp = document.getElementById('temp');
-    const elRaw = document.getElementById('raw');
-    const elStatusDot = document.getElementById('statusDot');
-    const elStatusText = document.getElementById('statusText');
-    const elConnDot = document.getElementById('connDot');
-    const elConnText = document.getElementById('connText');
-    const elBpmUpdated = document.getElementById('bpmUpdated');
-    const elTempUpdated = document.getElementById('tempUpdated');
-    const elRawUpdated = document.getElementById('rawUpdated');
-
-    // Chart setup (Chart.js)
-    const ctx = document.getElementById('bpmChart').getContext('2d');
-    const MAX_POINTS = 30;
-    const chartData = {
-      labels: [],
-      datasets: [{
-        label: 'BPM',
-        data: [],
-        fill: true,
-        backgroundColor: 'rgba(37, 99, 235, 0.1)',
-        borderColor: 'rgba(37, 99, 235, 1)',
-        tension: 0.4,
-        pointRadius: 3,
-        pointBackgroundColor: 'rgba(37, 99, 235, 1)',
-        pointBorderColor: '#ffffff',
-        pointBorderWidth: 2,
-        borderWidth: 2
-      }]
-    };
-    const bpmChart = new Chart(ctx, {
-      type: 'line',
-      data: chartData,
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: { 
-            display: true,
-            grid: {
-              display: false
+    <script>
+        // Simulated data for demonstration
+        let bpmValue = 72;
+        let tempValue = 36.8;
+        let rawValue = 512;
+        
+        // DOM elements
+        const elBpm = document.getElementById('bpm');
+        const elTemp = document.getElementById('temp');
+        const elRaw = document.getElementById('raw');
+        const elStatusDot = document.getElementById('statusDot');
+        const elStatusText = document.getElementById('statusText');
+        const elConnDot = document.getElementById('connDot');
+        const elConnText = document.getElementById('connText');
+        const elBpmUpdated = document.getElementById('bpmUpdated');
+        const elTempUpdated = document.getElementById('tempUpdated');
+        const elRawUpdated = document.getElementById('rawUpdated');
+        
+        // Chart setup (Chart.js)
+        const ctx = document.getElementById('bpmChart').getContext('2d');
+        const MAX_POINTS = 20;
+        
+        // Generate initial data
+        const initialData = Array.from({length: MAX_POINTS}, (_, i) => {
+            return Math.floor(Math.random() * 20) + 70;
+        });
+        
+        const initialLabels = Array.from({length: MAX_POINTS}, (_, i) => {
+            const d = new Date();
+            d.setMinutes(d.getMinutes() - (MAX_POINTS - i));
+            return d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+        });
+        
+        const chartData = {
+            labels: initialLabels,
+            datasets: [{
+                label: 'BPM',
+                data: initialData,
+                fill: true,
+                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                borderColor: 'rgba(37, 99, 235, 1)',
+                tension: 0.4,
+                pointRadius: 3,
+                pointBackgroundColor: 'rgba(37, 99, 235, 1)',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                borderWidth: 2
+            }]
+        };
+        
+        const bpmChart = new Chart(ctx, {
+            type: 'line',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { 
+                        display: true,
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: { 
+                        beginAtZero: false, 
+                        suggestedMin: 60, 
+                        suggestedMax: 100,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    }
+                },
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        titleColor: '#1e293b',
+                        bodyColor: '#64748b',
+                        borderColor: '#e2e8f0',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        displayColors: false
+                    }
+                }
             }
-          },
-          y: { 
-            beginAtZero: false, 
-            suggestedMin: 40, 
-            suggestedMax: 140,
-            grid: {
-              color: 'rgba(0, 0, 0, 0.05)'
-            }
-          }
-        },
-        plugins: { 
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-            titleColor: '#1e293b',
-            bodyColor: '#64748b',
-            borderColor: '#e2e8f0',
-            borderWidth: 1,
-            cornerRadius: 8,
-            displayColors: false
-          }
+        });
+        
+        // Helper: format time
+        function fmtTime(ts) {
+            const d = new Date(ts);
+            return d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit'});
         }
-      }
-    });
-
-    // Helper: format time
-    function fmtTime(ts) {
-      const d = new Date(ts);
-      return d.toLocaleTimeString();
-    }
-
-    // Helper: add point to chart
-    function addBpmPoint(value) {
-      const t = new Date();
-      const label = t.toLocaleTimeString();
-      chartData.labels.push(label);
-      chartData.datasets[0].data.push(Number(value) || 0);
-      if (chartData.labels.length > MAX_POINTS) {
-        chartData.labels.shift();
-        chartData.datasets[0].data.shift();
-      }
-      bpmChart.update();
-    }
-
-    // Connection UI helper
-    function setConnected(connected) {
-      elStatusText.textContent = connected ? 'Connected' : 'Disconnected';
-      elStatusDot.className = connected ? 'status-dot connected' : 'status-dot';
-      elConnText.textContent = connected ? 'Realtime connected' : 'Disconnected';
-      elConnDot.className = connected ? 'status-dot connected' : 'status-dot';
-    }
-
-    // Observe BPM
-    onValue(bpmRef, (snap) => {
-      const val = snap.exists() ? snap.val() : null;
-      elBpm.textContent = val !== null ? Number(val).toFixed(0) : '--';
-      elBpmUpdated.textContent = 'Last update: ' + fmtTime(Date.now());
-      setConnected(true);
-      addBpmPoint(val !== null ? val : 0);
-    }, (err) => {
-      console.warn('BPM listen error', err);
-      setConnected(false);
-    });
-
-    // Observe Temperature
-    onValue(tempRef, (snap) => {
-      const val = snap.exists() ? snap.val() : null;
-      elTemp.textContent = val !== null ? Number(val).toFixed(1) + ' °C' : '--';
-      elTempUpdated.textContent = 'Last update: ' + fmtTime(Date.now());
-      setConnected(true);
-    }, (err) => {
-      console.warn('Temp listen error', err);
-      setConnected(false);
-    });
-
-    // Observe Raw pulse value
-    onValue(rawRef, (snap) => {
-      const val = snap.exists() ? snap.val() : null;
-      elRaw.textContent = val !== null ? Number(val) : '--';
-      elRawUpdated.textContent = 'Last update: ' + fmtTime(Date.now());
-      setConnected(true);
-    }, (err) => {
-      console.warn('Raw listen error', err);
-      setConnected(false);
-    });
-
-    // If nothing updates for a while, show disconnected
-    let lastUpdate = Date.now();
-    setInterval(() => {
-      // simple heartbeat: if chart has no recent label updated, mark connected false after 25s
-      const now = Date.now();
-      if (bpmChart.data.labels.length === 0) {
-        // no data yet: don't flip
-        return;
-      }
-      // if last label older than 25s, consider disconnected
-      const lastLabel = bpmChart.data.labels[bpmChart.data.labels.length-1];
-      // can't convert label->time accurately; instead track latest update via bpmUpdated element
-      const lastText = elBpmUpdated.textContent.replace('Last update: ','');
-      const lastTs = Date.parse(lastText);
-      if (!isNaN(lastTs) && (now - lastTs > 25000)) {
-        setConnected(false);
-      }
-    }, 7000);
-
-  </script>
+        
+        // Connection UI helper
+        function setConnected(connected) {
+            elStatusText.textContent = connected ? 'Connected' : 'Disconnected';
+            elStatusDot.className = connected ? 'status-dot connected' : 'status-dot';
+            elConnText.textContent = connected ? 'Realtime connected' : 'Disconnected';
+            elConnDot.className = connected ? 'status-dot connected' : 'status-dot';
+        }
+        
+        // Update BPM
+        function updateBpm(value) {
+            elBpm.innerHTML = value + ' <span class="metric-badge normal">Normal</span>';
+            elBpmUpdated.textContent = 'Last update: ' + fmtTime(Date.now());
+            
+            // Update chart
+            const t = new Date();
+            const label = t.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+            chartData.labels.push(label);
+            chartData.datasets[0].data.push(value);
+            if (chartData.labels.length > MAX_POINTS) {
+                chartData.labels.shift();
+                chartData.datasets[0].data.shift();
+            }
+            bpmChart.update();
+        }
+        
+        // Update Temperature
+        function updateTemp(value) {
+            elTemp.innerHTML = value + '°C <span class="metric-badge normal">Normal</span>';
+            elTempUpdated.textContent = 'Last update: ' + fmtTime(Date.now());
+        }
+        
+        // Update Raw value
+        function updateRaw(value) {
+            elRaw.textContent = value;
+            elRawUpdated.textContent = 'Last update: ' + fmtTime(Date.now());
+        }
+        
+        // Simulate real-time updates
+        function simulateUpdates() {
+            // Randomly change values
+            bpmValue += Math.floor(Math.random() * 5) - 2;
+            if (bpmValue < 60) bpmValue = 60;
+            if (bpmValue > 100) bpmValue = 100;
+            
+            tempValue += (Math.random() * 0.4) - 0.2;
+            if (tempValue < 36.0) tempValue = 36.0;
+            if (tempValue > 37.5) tempValue = 37.5;
+            
+            rawValue += Math.floor(Math.random() * 20) - 10;
+            if (rawValue < 400) rawValue = 400;
+            if (rawValue > 600) rawValue = 600;
+            
+            // Update UI
+            updateBpm(bpmValue);
+            updateTemp(tempValue.toFixed(1));
+            updateRaw(rawValue);
+            
+            // Show connected state
+            setConnected(true);
+        }
+        
+        // Initialize with simulated data
+        updateBpm(bpmValue);
+        updateTemp(tempValue.toFixed(1));
+        updateRaw(rawValue);
+        setConnected(true);
+        
+        // Update every 3 seconds
+        setInterval(simulateUpdates, 3000);
+        
+        // Chart time range buttons
+        const chartBtns = document.querySelectorAll('.chart-btn');
+        chartBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                chartBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    </script>
 </body>
 </html>
