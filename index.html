@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>HealthCare — Live Dashboard</title>
+
+  <!-- Simple styling -->
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--muted:#94a3b8;--accent:#38bdf8;--text:#e6eef8}
+    *{box-sizing:border-box;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial}
+    body{margin:0;background:linear-gradient(180deg,#071027 0%, #071a2b 100%);color:var(--text);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:28px}
+    .container{width:100%;max-width:980px}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+    h1{font-size:20px;margin:0}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+    .card{background:var(--card);padding:14px;border-radius:10px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+    .muted{color:var(--muted);font-size:13px}
+    .value{font-size:28px;font-weight:700;margin-top:6px}
+    #chartCard{grid-column:1/-1}
+    #status{font-size:13px;color:var(--muted)}
+    footer{margin-top:14px;font-size:12px;color:var(--muted)}
+    .small{font-size:13px;color:var(--muted)}
+    .row{display:flex;gap:12px;align-items:center}
+    .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);display:inline-block;box-shadow:0 0 8px rgba(56,189,248,0.25)}
+  </style>
+
+  <!-- Chart.js (for the rolling chart) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>HealthCare — Live Dashboard</h1>
+      <div id="status">Connecting...</div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <div class="muted">Heart Rate (BPM)</div>
+        <div id="bpm" class="value">--</div>
+        <div class="small" id="bpmUpdated">Last update: --</div>
+      </div>
+
+      <div class="card">
+        <div class="muted">Body Temperature (°C)</div>
+        <div id="temp" class="value">--</div>
+        <div class="small" id="tempUpdated">Last update: --</div>
+      </div>
+
+      <div class="card">
+        <div class="muted">Pulse Sensor (Raw)</div>
+        <div id="raw" class="value">--</div>
+        <div class="small" id="rawUpdated">Last update: --</div>
+      </div>
+
+      <div id="chartCard" class="card">
+        <div class="muted">Recent BPM (rolling)</div>
+        <canvas id="bpmChart" width="800" height="240" style="display:block;margin-top:8px"></canvas>
+      </div>
+    </div>
+
+    <footer>
+      <div class="row">
+        <span class="dot" id="connDot" style="background:#f97316"></span>
+        <div id="connText" style="margin-left:8px;color:var(--muted)">Disconnected</div>
+      </div>
+      <div style="margin-top:10px" class="small">
+        Hosted on GitHub Pages • Data from your Firebase Realtime Database
+      </div>
+    </footer>
+  </div>
+
+  <!-- Firebase web modular SDK (v12.5.0) -->
+  <script type="module">
+    // Firebase imports (modular SDK)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
+
+    // --- Replace with your Firebase config (you provided this earlier) ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyCXNdT863O6m5Q_suM1oG4KbjEd0DxLqQo",
+      authDomain: "health-care-f0262.firebaseapp.com",
+      databaseURL: "https://health-care-f0262-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "health-care-f0262",
+      storageBucket: "health-care-f0262.firebasestorage.app",
+      messagingSenderId: "1001741084003",
+      appId: "1:1001741084003:web:3e1bfe9f0fa8b6a03c1f56"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Refs to your DB nodes
+    const bpmRef = ref(db, 'HealthCare/HeartRate/BPM');
+    const tempRef = ref(db, 'HealthCare/Temperature/BodyTempC');
+    const rawRef = ref(db, 'HealthCare/PulseSensor/RawValue');
+
+    // DOM elements
+    const elBpm = document.getElementById('bpm');
+    const elTemp = document.getElementById('temp');
+    const elRaw = document.getElementById('raw');
+    const elStatus = document.getElementById('status');
+    const elConnDot = document.getElementById('connDot');
+    const elConnText = document.getElementById('connText');
+    const elBpmUpdated = document.getElementById('bpmUpdated');
+    const elTempUpdated = document.getElementById('tempUpdated');
+    const elRawUpdated = document.getElementById('rawUpdated');
+
+    // Chart setup (Chart.js)
+    const ctx = document.getElementById('bpmChart').getContext('2d');
+    const MAX_POINTS = 30;
+    const chartData = {
+      labels: [],
+      datasets: [{
+        label: 'BPM',
+        data: [],
+        fill: false,
+        tension: 0.35,
+        pointRadius: 2,
+        borderWidth: 2
+      }]
+    };
+    const bpmChart = new Chart(ctx, {
+      type: 'line',
+      data: chartData,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { display: true, title: {display:false} },
+          y: { beginAtZero: false, suggestedMin: 40, suggestedMax: 140 }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    // Helper: format time
+    function fmtTime(ts) {
+      const d = new Date(ts);
+      return d.toLocaleString();
+    }
+
+    // Helper: add point to chart
+    function addBpmPoint(value) {
+      const t = new Date();
+      const label = t.toLocaleTimeString();
+      chartData.labels.push(label);
+      chartData.datasets[0].data.push(Number(value) || 0);
+      if (chartData.labels.length > MAX_POINTS) {
+        chartData.labels.shift();
+        chartData.datasets[0].data.shift();
+      }
+      bpmChart.update();
+    }
+
+    // Connection UI helper
+    function setConnected(connected) {
+      elStatus.textContent = connected ? 'Connected to Firebase' : 'Disconnected';
+      elConnDot.style.background = connected ? '#10b981' : '#f97316';
+      elConnText.textContent = connected ? 'Realtime connected' : 'Disconnected';
+    }
+
+    // Observe BPM
+    onValue(bpmRef, (snap) => {
+      const val = snap.exists() ? snap.val() : null;
+      elBpm.textContent = val !== null ? Number(val).toFixed(0) : '--';
+      elBpmUpdated.textContent = 'Last update: ' + fmtTime(Date.now());
+      setConnected(true);
+      addBpmPoint(val !== null ? val : 0);
+    }, (err) => {
+      console.warn('BPM listen error', err);
+      setConnected(false);
+    });
+
+    // Observe Temperature
+    onValue(tempRef, (snap) => {
+      const val = snap.exists() ? snap.val() : null;
+      elTemp.textContent = val !== null ? Number(val).toFixed(1) + ' °C' : '--';
+      elTempUpdated.textContent = 'Last update: ' + fmtTime(Date.now());
+      setConnected(true);
+    }, (err) => {
+      console.warn('Temp listen error', err);
+      setConnected(false);
+    });
+
+    // Observe Raw pulse value
+    onValue(rawRef, (snap) => {
+      const val = snap.exists() ? snap.val() : null;
+      elRaw.textContent = val !== null ? Number(val) : '--';
+      elRawUpdated.textContent = 'Last update: ' + fmtTime(Date.now());
+      setConnected(true);
+    }, (err) => {
+      console.warn('Raw listen error', err);
+      setConnected(false);
+    });
+
+    // If nothing updates for a while, show disconnected
+    let lastUpdate = Date.now();
+    setInterval(() => {
+      // simple heartbeat: if chart has no recent label updated, mark connected false after 25s
+      const now = Date.now();
+      if (bpmChart.data.labels.length === 0) {
+        // no data yet: don't flip
+        return;
+      }
+      // if last label older than 25s, consider disconnected
+      const lastLabel = bpmChart.data.labels[bpmChart.data.labels.length-1];
+      // can't convert label->time accurately; instead track latest update via bpmUpdated element
+      const lastText = elBpmUpdated.textContent.replace('Last update: ','');
+      const lastTs = Date.parse(lastText);
+      if (!isNaN(lastTs) && (now - lastTs > 25000)) {
+        setConnected(false);
+      }
+    }, 7000);
+
+  </script>
+</body>
+</html>
